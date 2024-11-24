@@ -1,36 +1,20 @@
-from uuid import uuid4
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta, UTC
-
-
-def default_exp() -> float:
-    now = datetime.now(UTC)
-    return (now + timedelta(seconds=7200)).timestamp()
-
-
-def default_nbf() -> float:
-    now = datetime.now(UTC)
-    return (now - timedelta(seconds=120)).timestamp()
-
-
-def default_iat() -> float:
-    now = datetime.now(UTC)
-    return (now - timedelta(seconds=120)).timestamp()
-
-
-def default_jti() -> str:
-    return uuid4().hex
+from dataclasses import dataclass
+from datetime import datetime, UTC
 
 
 @dataclass
-class RegisteredClaims:
+class Payload:
     iss: str | None = None
     sub: str | None = None
     aud: str | None = None
-    exp: float = field(default_factory=default_exp)
-    nbf: float = field(default_factory=default_nbf)
-    iat: float = field(default_factory=default_iat)
-    jti: str = field(default_factory=default_jti)
+    exp: float | None = None
+    nbf: float | None = None
+    iat: float | None = None
+    jti: str | None = None
+
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def _is_iss_verified(self, iss: str | None) -> bool:
         return self.iss == iss
@@ -42,13 +26,13 @@ class RegisteredClaims:
         return self.aud == aud
 
     def _is_exp_verified(self, now: float) -> bool:
-        return now < self.exp
+        return self.exp is None or now < self.exp
 
     def _is_nbf_verified(self, now: float) -> bool:
-        return self.nbf < now
+        return self.exp is None or self.nbf < now
 
     def _is_iat_verified(self, now: float) -> bool:
-        return self.iat < now
+        return self.iat is None or self.iat < now
 
     def verify(
         self, iss: str | None = None, sub: str | None = None, aud: str | None = None
@@ -68,25 +52,3 @@ class RegisteredClaims:
             and is_nbf_verified
             and is_iat_verified
         )
-
-
-@dataclass
-class CustomClaims:
-    user_id: str | None = None
-
-
-@dataclass
-class PublicClaims:
-    auth_time: float | None = None
-    acr: float | None = None
-    nonce: float | None = None
-
-
-@dataclass
-class PrivateClaims:
-    pass
-
-
-@dataclass
-class Payload(RegisteredClaims, CustomClaims, PublicClaims, PrivateClaims):
-    pass

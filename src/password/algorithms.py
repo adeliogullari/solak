@@ -13,6 +13,7 @@ class Pbkdf2:
             iterations=iterations,
         )
 
+        salt = base64.b64encode(salt.encode("utf-8")).decode("utf-8")
         password_hash = base64.b64encode(password_hash).decode("utf-8")
 
         return f"$pbkdf2-{hash_name}$i={iterations}${salt}${password_hash}"
@@ -22,7 +23,7 @@ class Pbkdf2:
         parts = encoded_password.split("$")
         hash_name = parts[1].split("-")[1]
         iterations = int(parts[2].split("=")[1])
-        salt = parts[3]
+        salt = base64.b64decode(parts[3].encode("utf-8")).decode("utf-8")
         password_hash = base64.b64decode(parts[4])
 
         return (
@@ -57,6 +58,7 @@ class Scrypt:
             p=p,
         )
 
+        salt = base64.b64encode(salt.encode("utf-8")).decode("utf-8")
         password_hash = base64.b64encode(password_hash).decode("utf-8")
 
         return f"$scrypt$ln={n}$r={r}$p={p}${salt}${password_hash}"
@@ -67,7 +69,7 @@ class Scrypt:
         n = int(parts[2].split("=")[1])
         r = int(parts[3].split("=")[1])
         p = int(parts[4].split("=")[1])
-        salt = parts[5]
+        salt = base64.b64decode(parts[5].encode("utf-8")).decode("utf-8")
         password_hash = base64.b64decode(parts[6])
 
         return (
