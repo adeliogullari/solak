@@ -1,17 +1,10 @@
-import re
 import json
 import hmac
 import base64
 from typing import Any, Literal
-from itertools import chain, repeat
-from secrets import compare_digest
-
 from dataclasses import dataclass
+from secrets import compare_digest
 from datetime import datetime, UTC
-
-Base64Segment = r"[A-Za-z0-9+/]{4}"
-Base64Padding = r"[A-Za-z0-9+/]{2}(?:==)"
-Base64OptionalPadding = r"[A-Za-z0-9+/]{3}="
 
 DigestMod = {
     "HS256": "sha256",
@@ -74,19 +67,12 @@ class Payload:
 
 class JsonWebToken:
     @classmethod
-    def _is_base64_encoded(cls, string: str) -> bool:
-        base64_pattern = re.compile(
-            f"^(?:{Base64Segment})*(?:{Base64Padding}?|{Base64OptionalPadding})?$"
-        )
-        return base64_pattern.match(string) is not None
-
-    @classmethod
-    def _verify_signature(cls, payload: Any, headers: Any, signature: Any, key: Any):
-        algorithm = headers["alg"]
-        headers = base64.b64encode(json.dumps(headers).encode("utf-8")).decode("utf-8")
+    def _verify_signature(cls, payload: Any, header: Any, signature: Any, key: Any):
+        algorithm = header["alg"]
+        header = base64.b64encode(json.dumps(header).encode("utf-8")).decode("utf-8")
         payload = base64.b64encode(json.dumps(payload).encode("utf-8")).decode("utf-8")
 
-        msg = base64.b64encode(f"{headers}.{payload}".encode("utf-8"))
+        msg = base64.b64encode(f"{header}.{payload}".encode("utf-8"))
         msg_hash = hmac.new(
             key=key.encode("utf-8"), msg=msg, digestmod=DigestMod[algorithm]
         ).digest()
@@ -100,23 +86,23 @@ class JsonWebToken:
         key: str,
         algorithm: Literal["HS256", "HS384", "HS512"] = "HS256",
     ) -> str:
-        headers = base64.b64encode(
+        header = base64.b64encode(
             json.dumps({"alg": algorithm, "typ": "JWT"}).encode("utf-8")
         ).decode("utf-8")
         payload = base64.b64encode(json.dumps(payload).encode("utf-8")).decode("utf-8")
-        msg = base64.b64encode(f"{headers}.{payload}".encode("utf-8"))
+        msg = base64.b64encode(f"{header}.{payload}".encode("utf-8"))
         msg_hash = hmac.new(
             key=key.encode("utf-8"), msg=msg, digestmod=DigestMod[algorithm]
         ).digest()
         signature = base64.b64encode(msg_hash).decode("utf-8")
-        return f"{headers}.{payload}.{signature}"
+        return f"{header}.{payload}.{signature}"
 
     @classmethod
     def decode(cls, token: str) -> tuple[Any, Any, Any]:
-        headers, payload, signature, *_ = chain(token.split("."), repeat("{}", 3))
-        headers = json.loads(base64.b64decode(headers.encode("utf-8")))
+        header, payload, signature = token.split(".")
+        header = json.loads(base64.b64decode(header.encode("utf-8")))
         payload = json.loads(base64.b64decode(payload.encode("utf-8")))
-        return headers, payload, signature
+        return header, payload, signature
 
     @classmethod
     def verify(
@@ -127,20 +113,9 @@ class JsonWebToken:
         sub: str | None = None,
         aud: str | None = None,
     ) -> bool:
-        headers, payload, signature = cls.decode(token=token)
-
-        # headers = base64.b64encode(json.dumps(headers).encode("utf-8")).decode("utf-8")
-        # payload = base64.b64encode(json.dumps(payload).encode("utf-8")).decode("utf-8")
-        # msg = base64.b64encode(f"{headers}.{payload}".encode("utf-8"))
-        # hmac_sha3_256 = hmac.new(
-        #    key=key.encode("utf-8"), msg=msg, digestmod=DigestMod.get(headers["alg"])
-        # )
-        # signature = base64.b64encode(hmac_sha3_256.digest()).decode("utf-8")
-
+        header, payload, signature = cls.decode(token=token)
         is_payload_verified = Payload(**payload).verify(iss=iss, sub=sub, aud=aud)
         is_signature_verified = cls._verify_signature(
-            payload=payload, headers=headers, signature=signature, key=key
+            payload=payload, header=header, signature=signature, key=key
         )
         return is_payload_verified and is_signature_verified
-
-    # hmac_sha256 = hmac.new(key, message, hashlib.sha256)
