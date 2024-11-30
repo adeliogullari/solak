@@ -31,7 +31,7 @@ class Pbkdf2:
             str: A base64-encoded string that includes the encoded password hash and its parameters. The format of the returned
                  string is as follows:
 
-                 $pbkdf2-{hash_name}$i={iterations}${salt}${password_hash}
+                 $pbkdf2-{hash_name}$i={iterations}${base64_salt}${base64_password_hash}
 
                  Where:
                  - `{hash_name}`: The hash function used (e.g., 'sha256').
@@ -49,10 +49,10 @@ class Pbkdf2:
             iterations=iterations,
         )
 
-        salt = base64.b64encode(salt.encode("utf-8")).decode("utf-8")
-        password_hash = base64.b64encode(password_hash).decode("utf-8")
+        base64_salt = base64.b64encode(salt.encode("utf-8")).decode("utf-8")
+        base64_password_hash = base64.b64encode(password_hash).decode("utf-8")
 
-        return f"$pbkdf2-{hash_name}$i={iterations}${salt}${password_hash}"
+        return f"$pbkdf2-{hash_name}$i={iterations}${base64_salt}${base64_password_hash}"
 
     @classmethod
     def decode(cls, encoded_password: str) -> tuple:
@@ -165,10 +165,10 @@ class Scrypt:
             p=p,
         )
 
-        salt = base64.b64encode(salt.encode("utf-8")).decode("utf-8")
-        password_hash = base64.b64encode(password_hash).decode("utf-8")
+        base64_salt = base64.b64encode(salt.encode("utf-8")).decode("utf-8")
+        base64_password_hash = base64.b64encode(password_hash).decode("utf-8")
 
-        return f"$scrypt$ln={n}$r={r}$p={p}${salt}${password_hash}"
+        return f"$scrypt$ln={n}$r={r}$p={p}${base64_salt}${base64_password_hash}"
 
     @classmethod
     def decode(cls, encoded_password: str) -> tuple:
