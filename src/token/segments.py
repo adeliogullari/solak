@@ -2,30 +2,40 @@ from dataclasses import dataclass
 from datetime import datetime, UTC
 
 
+DigestMod = {
+    "HS256": "sha256",
+    "HS384": "sha384",
+    "HS512": "sha512",
+}
+
+
+@dataclass
+class Header:
+    alg: str
+    typ: str
+
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    def _is_alg_verified(self, algorithm: str) -> bool:
+        if (
+            isinstance(self.alg, str)
+            and isinstance(algorithm, str)
+            and self.alg in DigestMod
+            and algorithm in DigestMod
+        ):
+            return self.alg == algorithm
+
+        return False
+
+    def verify(self, algorithm: str) -> bool:
+        is_alg_verified = self._is_alg_verified(algorithm=algorithm)
+        return is_alg_verified
+
+
 @dataclass
 class Payload:
-    """
-    A class to represent the payload of a JWT (JSON Web Token).
-
-    Attributes:
-        iss (str | None): The issuer claim, identifies the principal that issued the token.
-        sub (str | None): The subject claim, identifies the principal that is the subject of the token.
-        aud (str | None): The audience claim, identifies the recipients that the token is intended for.
-        exp (float | None): The expiration time claim, the time after which the token is no longer valid.
-        nbf (float | None): The not-before claim, the time before which the token should not be accepted.
-        iat (float | None): The issued-at claim, the time at which the token was issued.
-        jti (str | None): The JWT ID claim, a unique identifier for the token.
-
-    Methods:
-        _is_iss_verified(self, iss): Verifies if the `iss` claim matches the expected issuer.
-        _is_sub_verified(self, sub): Verifies if the `sub` claim matches the expected subject.
-        _is_aud_verified(self, aud): Verifies if the `aud` claim matches the expected audience.
-        _is_exp_verified(self, now): Verifies if the token is not expired based on the `exp` claim.
-        _is_nbf_verified(self, now): Verifies if the token is valid before the `nbf` claim.
-        _is_iat_verified(self, now): Verifies if the token was issued before the `iat` claim.
-        verify(self, iss, sub, aud): Verifies if the provided claims match the token's claims and if it is not expired.
-    """
-
     iss: str | None = None
     sub: str | None = None
     aud: str | None = None
@@ -39,91 +49,62 @@ class Payload:
             setattr(self, key, value)
 
     def _is_iss_verified(self, iss: str | None) -> bool:
-        """
-        Verifies if the `iss` claim matches the expected issuer.
+        if self.iss is None and iss is None:
+            return True
 
-        Args:
-            iss (str | None): The expected issuer to compare with the payload's `iss` claim.
+        if isinstance(self.iss, str) and isinstance(iss, str):
+            return self.iss == iss
 
-        Returns:
-            bool: True if the `iss` claim matches, False otherwise.
-        """
-        return self.iss == iss
+        return False
 
     def _is_sub_verified(self, sub: str | None) -> bool:
-        """
-        Verifies if the `sub` claim matches the expected subject.
+        if self.sub is None and sub is None:
+            return True
 
-        Args:
-            sub (str | None): The expected subject to compare with the payload's `sub` claim.
+        if isinstance(self.sub, str) and isinstance(sub, str):
+            return self.sub == sub
 
-        Returns:
-            bool: True if the `sub` claim matches, False otherwise.
-        """
-        return self.sub == sub
+        return False
 
     def _is_aud_verified(self, aud: str | None) -> bool:
-        """
-        Verifies if the `aud` claim matches the expected audience.
+        if self.aud is None and aud is None:
+            return True
 
-        Args:
-            aud (str | None): The expected audience to compare with the payload's `aud` claim.
+        if isinstance(self.aud, str) and isinstance(aud, str):
+            return self.aud == aud
 
-        Returns:
-            bool: True if the `aud` claim matches, False otherwise.
-        """
-        return self.aud == aud
+        return False
 
     def _is_exp_verified(self, now: float) -> bool:
-        """
-        Verifies if the token is not expired based on the `exp` claim.
+        if self.exp is None:
+            return True
 
-        Args:
-            now (float): The current time in seconds since the epoch.
+        if isinstance(self.exp, float):
+            return self.exp > now
 
-        Returns:
-            bool: True if the token is not expired, False if expired or `exp` claim is not present.
-        """
-        return self.exp is None or now < self.exp
+        return False
 
     def _is_nbf_verified(self, now: float) -> bool:
-        """
-        Verifies if the token is valid before the `nbf` claim.
+        if self.nbf is None:
+            return True
 
-        Args:
-            now (float): The current time in seconds since the epoch.
+        if isinstance(self.nbf, float):
+            return self.nbf < now
 
-        Returns:
-            bool: True if the token is valid before the `nbf` claim, False otherwise.
-        """
-        return self.exp is None or self.nbf < now
+        return False
 
     def _is_iat_verified(self, now: float) -> bool:
-        """
-        Verifies if the token was issued before the `iat` claim.
+        if self.iat is None:
+            return True
 
-        Args:
-            now (float): The current time in seconds since the epoch.
+        if isinstance(self.iat, float):
+            return self.iat < now
 
-        Returns:
-            bool: True if the token was issued before the `iat` claim, False otherwise.
-        """
-        return self.iat is None or self.iat < now
+        return False
 
     def verify(
         self, iss: str | None = None, sub: str | None = None, aud: str | None = None
     ) -> bool:
-        """
-        Verifies if the provided claims match the token's claims and if it is not expired.
-
-        Args:
-            iss (str | None): The expected issuer to verify against the `iss` claim.
-            sub (str | None): The expected subject to verify against the `sub` claim.
-            aud (str | None): The expected audience to verify against the `aud` claim.
-
-        Returns:
-            bool: True if all claims are valid and the token is not expired, False otherwise.
-        """
         now = datetime.now(UTC).timestamp()
         is_iss_verified = self._is_iss_verified(iss=iss)
         is_sub_verified = self._is_sub_verified(sub=sub)

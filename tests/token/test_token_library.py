@@ -1,29 +1,7 @@
 import pytest
 from typing import Any
 from datetime import datetime, timedelta, UTC
-from src.token.library import Payload, JsonWebToken
-
-
-def test_payload_verify() -> None:
-    now = datetime.now(UTC)
-    exp = (now + timedelta(seconds=7200)).timestamp()
-    nbf = (now - timedelta(seconds=60)).timestamp()
-    iat = (now - timedelta(seconds=60)).timestamp()
-
-    payload = Payload(sub="sub", iss="iss", aud="aud", exp=exp, nbf=nbf, iat=iat)
-
-    assert payload.verify(iss=payload.iss, sub=payload.sub, aud=payload.aud) is True
-
-
-def test_payload_verify_with_exceed_expiration() -> None:
-    now = datetime.now(UTC)
-    exp = (now - timedelta(seconds=7200)).timestamp()
-    nbf = (now + timedelta(seconds=60)).timestamp()
-    iat = (now + timedelta(seconds=60)).timestamp()
-
-    payload = Payload(sub="sub", iss="iss", aud="aud", exp=exp, nbf=nbf, iat=iat)
-
-    assert payload.verify(iss=payload.iss, sub=payload.sub, aud=payload.aud) is False
+from src.token.library import JsonWebToken
 
 
 @pytest.mark.parametrize("algorithm", ["HS256", "HS384", "HS512"])
@@ -45,7 +23,9 @@ def test_json_web_token_verify(algorithm: Any) -> None:
     token = JsonWebToken.encode(payload=payload, key="key", algorithm=algorithm)
 
     assert (
-        JsonWebToken.verify(token=token, key="key", iss="iss", sub="sub", aud="aud")
+        JsonWebToken.verify(
+            token=token, key="key", algorithm=algorithm, iss="iss", sub="sub", aud="aud"
+        )
         is True
     )
 
@@ -69,17 +49,23 @@ def test_json_web_token_verify_with_invalid_key() -> None:
 
     assert (
         JsonWebToken.verify(
-            token=token, key="invalid_key", iss="iss", sub="sub", aud="aud"
+            token=token,
+            key="invalid_key",
+            algorithm="HS256",
+            iss="iss",
+            sub="sub",
+            aud="aud",
         )
         is False
     )
 
 
-def test_json_web_token_verify_with_exceed_expiration() -> None:
+@pytest.mark.parametrize("algorithm", [None, "", "InvalidAlgorithm", "HS384", "HS512"])
+def test_json_web_token_verify_with_invalid_algorithm(algorithm) -> None:
     now = datetime.now(UTC)
-    exp = (now - timedelta(seconds=7200)).timestamp()
-    nbf = (now + timedelta(seconds=60)).timestamp()
-    iat = (now + timedelta(seconds=60)).timestamp()
+    exp = (now + timedelta(seconds=7200)).timestamp()
+    nbf = (now - timedelta(seconds=60)).timestamp()
+    iat = (now - timedelta(seconds=60)).timestamp()
 
     payload = {
         "iss": "iss",
@@ -93,6 +79,38 @@ def test_json_web_token_verify_with_exceed_expiration() -> None:
     token = JsonWebToken.encode(payload=payload, key="key", algorithm="HS256")
 
     assert (
-        JsonWebToken.verify(token=token, key="key", iss="iss", sub="sub", aud="aud")
+        JsonWebToken.verify(
+            token=token,
+            key="key",
+            algorithm=algorithm,
+            iss="iss",
+            sub="sub",
+            aud="aud",
+        )
+        is False
+    )
+
+
+def test_json_web_token_verify_with_exceed_expiration() -> None:
+    now = datetime.now(UTC)
+    exp = (now - timedelta(seconds=7200)).timestamp()
+    nbf = (now - timedelta(seconds=60)).timestamp()
+    iat = (now - timedelta(seconds=60)).timestamp()
+
+    payload = {
+        "iss": "iss",
+        "sub": "sub",
+        "aud": "aud",
+        "exp": exp,
+        "nbf": nbf,
+        "iat": iat,
+    }
+
+    token = JsonWebToken.encode(payload=payload, key="key", algorithm="HS256")
+
+    assert (
+        JsonWebToken.verify(
+            token=token, key="key", algorithm="HS256", iss="iss", sub="sub", aud="aud"
+        )
         is False
     )

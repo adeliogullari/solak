@@ -52,7 +52,9 @@ class Pbkdf2:
         base64_salt = base64.b64encode(salt.encode("utf-8")).decode("utf-8")
         base64_password_hash = base64.b64encode(password_hash).decode("utf-8")
 
-        return f"$pbkdf2-{hash_name}$i={iterations}${base64_salt}${base64_password_hash}"
+        return (
+            f"$pbkdf2-{hash_name}$i={iterations}${base64_salt}${base64_password_hash}"
+        )
 
     @classmethod
     def decode(cls, encoded_password: str) -> tuple:
