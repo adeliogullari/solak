@@ -1,7 +1,7 @@
 import pytest
 from typing import Any
 from datetime import datetime, timedelta, UTC
-from src.token.library import JsonWebToken
+from src.pytography import JsonWebToken
 
 
 @pytest.mark.parametrize("algorithm", ["HS256", "HS384", "HS512"])

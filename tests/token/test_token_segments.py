@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime, timedelta, UTC
-from src.token.segments import Header, Payload
+from src.pytography.token.segments import Header, Payload
 
 
 @pytest.mark.parametrize(

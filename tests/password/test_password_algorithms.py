@@ -1,4 +1,4 @@
-from src.password.algorithms import Pbkdf2, Scrypt
+from src.pytography.password.algorithms import Pbkdf2, Scrypt
 
 
 def test_pbkdf2_verify() -> None:

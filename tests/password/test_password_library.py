@@ -1,6 +1,6 @@
 import pytest
 from typing import Literal
-from src.password.library import PasswordHashLibrary
+from src.pytography import PasswordHashLibrary
 
 
 @pytest.mark.parametrize("algorithm", ["pbkdf2", "scrypt"])

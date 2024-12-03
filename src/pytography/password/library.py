@@ -26,10 +26,9 @@ class PasswordHashLibrary:
         """
         Encode a password using the specified hashing algorithm (PBKDF2 or Scrypt).
 
-        This method allows encoding a password by selecting the appropriate algorithm (PBKDF2 or Scrypt),
-        using the parameters passed as arguments. The method uses the chosen algorithm's encoding method
-        and incorporates a salt for added security. Additional parameters, such as iterations for PBKDF2 or
-        n, r, p for scrypt, can be passed using `**kwargs`.
+        This method encodes a password by selecting the appropriate algorithm (PBKDF2 or Scrypt), using the parameters
+        passed as arguments. The method incorporates a salt for added security. Additional parameters specific to the
+        chosen algorithm, such as iterations for PBKDF2 or n, r, p for Scrypt, can be passed using `**kwargs`.
 
         Args:
             password (str): The password to be encoded.
@@ -41,7 +40,7 @@ class PasswordHashLibrary:
 
         Returns:
             str: A base64-encoded string that includes the encoded password hash and its parameters,
-                 formatted according to the chosen algorithm.
+                 formatted according to the chosen algorithm. The format depends on whether PBKDF2 or Scrypt is used.
 
         Example:
             encoded_password = PasswordHashLibrary.encode('password', algorithm='pbkdf2', hash_name='sha256', iterations=100000)
